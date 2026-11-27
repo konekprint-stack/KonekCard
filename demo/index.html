@@ -267,47 +267,47 @@
     let savedPin = sessionStorage.getItem("konekloyalty_pin") || "";
 
 function jsonpGet(queryParams) {
-      return new Promise((resolve, reject) => {
-        const cleanBase = API_URL.trim().replace(/\/u\/\d+\//, "/").replace(/\/+$/, "");
-        if (!cleanBase.startsWith("https://script.google.com/")) {
-          reject(new Error("Falta configurar API_URL en index.html"));
-          return;
-        }
-
-        const reqId = "kl_req_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-
-        queryParams.reqId = reqId;
-        queryParams._t = Date.now();
-        const qs = Object.keys(queryParams)
-          .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(queryParams[k]))
-          .join("&");
-
-        const cleanup = () => {
-          window.removeEventListener("message", onMsg);
-          if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-        };
-
-        const timer = setTimeout(() => {
-          cleanup();
-          reject(new Error("Tiempo de espera agotado al conectar con Google"));
-        }, 15000);
-
-        function onMsg(ev) {
-          if (ev.data && ev.data.reqId === reqId) {
-            clearTimeout(timer);
-            cleanup();
-            resolve(ev.data.data);
-          }
-        }
-
-        window.addEventListener("message", onMsg);
-        iframe.src = cleanBase + (cleanBase.includes("?") ? "&" : "?") + qs;
-        document.body.appendChild(iframe);
-      });
+  return new Promise((resolve, reject) => {
+    const cleanBase = API_URL.trim().replace(/\/u\/\d+\//, "/").replace(/\/+$/, "");
+    if (!cleanBase.startsWith("https://script.google.com/macros/s/")) {
+      reject(new Error("URL de API_URL mal formada en index.html"));
+      return;
     }
-    
+
+    const cb = "kl_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+    const script = document.createElement("script");
+    script.referrerPolicy = "no-referrer";
+
+    queryParams.callback = cb;
+    queryParams._t = Date.now();
+    const qs = Object.keys(queryParams)
+      .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(queryParams[k]))
+      .join("&");
+
+    const timer = setTimeout(() => {
+      delete window[cb];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error("Tiempo de espera agotado al conectar con Google"));
+    }, 15000);
+
+    window[cb] = (data) => {
+      clearTimeout(timer);
+      delete window[cb];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      resolve(data);
+    };
+
+    script.onerror = () => {
+      clearTimeout(timer);
+      delete window[cb];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error("Error de red al conectar con Apps Script"));
+    };
+
+    script.src = cleanBase + "?" + qs;
+    document.head.appendChild(script);
+  });
+}    
     function postAction(payload) {
       const cleanBase = API_URL.trim().replace(/\/u\/\d+\//, "/");
       const body = new URLSearchParams();
