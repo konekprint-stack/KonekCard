@@ -271,7 +271,6 @@
       return new Promise((resolve, reject) => {
         const cb = "kl_cb_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
         const script = document.createElement("script");
-        script.crossOrigin = "anonymous";
         script.referrerPolicy = "no-referrer";
 
         queryParams.callback = cb;
