@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>KonekLoyalty • Tarjeta de Lealtad</title>
+  <style>
+    :root {
+      --primary: #d97706;
+      --bg: #090d16;
+      --card: #111827;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #1f2937;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 18px 14px 40px 14px;
+    }
+
+    .app-wrap { width: 100%; max-width: 430px; }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .brand-tag {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: rgba(255,255,255,0.06);
+      padding: 5px 12px;
+      border-radius: 50px;
+    }
+
+    .lock-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.05rem;
+      cursor: pointer;
+    }
+    .lock-btn.unlocked { background: #10b981; border-color: #10b981; }
+
+    .loyalty-card {
+      background: linear-gradient(145deg, #161f33, #0f172a);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 24px 20px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shop-logo {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--primary);
+      margin: 0 auto 10px auto;
+      display: none;
+      background: #fff;
+    }
+
+    .shop-name { font-size: 1.45rem; font-weight: 800; margin-bottom: 4px; }
+    .client-pill {
+      display: inline-block;
+      background: rgba(255,255,255,0.07);
+      padding: 5px 14px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      margin-bottom: 20px;
+    }
+
+    .stamps-grid {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 10px 0 22px 0;
+    }
+
+    .stamp {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 2px dashed #334155;
+      background: rgba(15, 23, 42, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      color: #475569;
+      transition: all 0.25s ease;
+    }
+
+    .stamp.active {
+      border: 2px solid #ffffff;
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 0 18px var(--primary);
+      transform: scale(1.06);
+    }
+
+    .progress-text { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
+    .reward-box {
+      background: rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 0.86rem;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    .reward-ready {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      font-weight: 800;
+      padding: 14px;
+      border-radius: 16px;
+      margin-top: 14px;
+      font-size: 0.95rem;
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+
+    .admin-box {
+      display: none;
+      background: var(--card);
+      border: 2px solid var(--primary);
+      border-radius: 20px;
+      padding: 18px 16px;
+      margin-top: 18px;
+    }
+
+    .admin-title { font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; justify-content: space-between; }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      font-size: 0.96rem;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-add { background: #10b981; color: #fff; }
+    .btn-reset { background: #f59e0b; color: #fff; }
+    .btn-secondary { background: #1e293b; color: #e2e8f0; font-size: 0.85rem; padding: 11px; }
+
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #fff;
+      font-size: 0.92rem;
+      margin-bottom: 10px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      justify-content: center;
+      align-items: center;
+      padding: 18px;
+      z-index: 999;
+    }
+    .modal-content {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 22px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+    }
+
+    .meta-footer {
+      margin-top: 16px;
+      font-size: 0.74rem;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-wrap">
+    <div class="top-bar">
+      <span class="brand-tag">⚡ KonekLoyalty VIP</span>
+      <button type="button" id="btnLock" class="lock-btn" title="Acceso Barbero">🔒</button>
+    </div>
+
+    <div class="loyalty-card" id="mainCard">
+      <p style="color:var(--muted); padding: 30px 0;">⏳ Leyendo llavero...</p>
+    </div>
+
+    <!-- PANEL DEL DUEÑO / BARBERO -->
+    <div class="admin-box" id="adminBox">
+      <div class="admin-title">
+        <span>✂️ Control de Barbero</span>
+        <span style="cursor:pointer; color:#ef4444; font-size:0.8rem;" onclick="logoutAdmin()">Cerrar sesión</span>
+      </div>
+
+      <div id="adminControls"></div>
+      <p id="adminMsg" style="text-align:center; font-size:0.84rem; color:#38bdf8; margin-top:6px;"></p>
+
+      <hr style="border-color:#1f2937; margin: 14px 0;">
+      <label style="font-size:0.78rem; color:var(--muted); display:block; margin-bottom:6px;">🔎 Cambiar o buscar otro cliente:</label>
+      <select id="clientSelector" class="input-field" onchange="switchClient(this.value)"></select>
+    </div>
+
+    <div class="meta-footer">
+      Llavero Inteligente por <strong>KONEK Print &amp; Tech</strong>
+    </div>
+  </div>
+
+  <!-- MODAL DE PIN -->
+  <div class="modal" id="pinModal">
+    <div class="modal-content">
+      <div style="font-size:2rem; margin-bottom:6px;">🔐</div>
+      <h3 style="margin-bottom:6px;">PIN del Barbero</h3>
+      <p style="font-size:0.82rem; color:var(--muted); margin-bottom:14px;">Ingresa tu clave de 4 dígitos para sumar o limpiar visitas.</p>
+      <input type="password" id="pinInput" inputmode="numeric" maxlength="6" class="input-field" placeholder="••••" style="text-align:center; font-size:1.3rem; letter-spacing:6px;">
+      <button type="button" class="btn btn-add" onclick="checkPin()">Desbloquear</button>
+      <button type="button" class="btn btn-secondary" onclick="closePinModal()">Cancelar</button>
+      <p id="pinError" style="color:#ef4444; font-size:0.8rem; margin-top:6px;"></p>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxLui9pzUUOzCSL4Zxxkihs6cpipos3-r92o8mPxg_ZxnDdYog6Qx8sgIcj1lAMJQAr/exec";
+
+    const params = new URLSearchParams(window.location.search);
+    let currentClientId = (params.get("c") || "CLI-001").trim().toUpperCase();
+    let appData = null;
+    let isUnlocked = false;
+    let savedPin = sessionStorage.getItem("konekloyalty_pin") || "";
+
+    // Lector inmune a cuentas de trabajo y sesiones múltiples en móviles
+    function jsonpGet(queryParams) {
+      return new Promise((resolve, reject) => {
+        const cb = "kl_cb_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+        const script = document.createElement("script");
+        script.crossOrigin = "anonymous";
+        script.referrerPolicy = "no-referrer";
+
+        queryParams.callback = cb;
+        queryParams._t = Date.now();
+        const qs = Object.keys(queryParams).map(k => encodeURIComponent(k) + "=" + encodeURIComponent(queryParams[k])).join("&");
+
+        const timer = setTimeout(() => {
+          delete window[cb];
+          script.remove();
+          reject(new Error("Tiempo de espera agotado"));
+        }, 15000);
+
+        window[cb] = (data) => {
+          clearTimeout(timer);
+          delete window[cb];
+          script.remove();
+          resolve(data);
+        };
+
+        script.onerror = () => {
+          clearTimeout(timer);
+          delete window[cb];
+          script.remove();
+          reject(new Error("Error de conexión con el servidor"));
+        };
+
+        script.src = API_URL.trim() + "?" + qs;
+        document.head.appendChild(script);
+      });
+    }
+
+    function postAction(payload) {
+      const body = new URLSearchParams();
+      Object.keys(payload).forEach(k => body.append(k, payload[k]));
+      return fetch(API_URL.trim(), {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString()
+      });
+    }
+
+    async function loadCard() {
+      const cardEl = document.getElementById("mainCard");
+      try {
+        const res = await jsonpGet({ action: "getCard", c: currentClientId });
+        if (!res || !res.success) {
+          cardEl.innerHTML = `<p style="color:#ef4444; padding:25px 0;">⚠️ ${res ? res.error : "Error al cargar"}</p>`;
+          return;
+        }
+
+        appData = res;
+        document.documentElement.style.setProperty("--primary", res.negocio.color);
+        document.title = res.negocio.nombre + " • Lealtad";
+
+        if (savedPin && !isUnlocked) {
+          const v = await jsonpGet({ action: "verifyPin", pin: savedPin });
+          if (v && v.success) {
+            isUnlocked = true;
+            updateLockUI();
+          }
+        }
+
+        renderCard();
+        renderAdminControls();
+      } catch (err) {
+        cardEl.innerHTML = `<p style="color:#ef4444; padding:25px 0;">❌ ${err.message}</p>`;
+      }
+    }
+
+    function renderCard() {
+      const cardEl = document.getElementById("mainCard");
+      const neg = appData.negocio;
+      const cli = appData.cliente;
+
+      let logoHtml = neg.logo ? `<img src="${neg.logo}" class="shop-logo" style="display:block;" alt="Logo">` : "";
+
+      if (appData.nuevoLlavero) {
+        cardEl.innerHTML = `
+          ${logoHtml}
+          <div class="shop-name">${neg.nombre}</div>
+          <div class="client-pill">Llavero: <strong>${appData.clienteIdBuscado}</strong></div>
+          <p style="color:#fbbf24; font-weight:700; margin:14px 0;">✨ Llavero listo para activarse</p>
+          <p style="font-size:0.85rem; color:var(--muted);">Pide al barbero que toque el candado 🔒 para registrar tu nombre y tu primera visita.</p>
+        `;
+        return;
+      }
+
+      const visitas = cli.visitas;
+      const meta = neg.meta;
+      const completado = visitas >= meta;
+
+      let stampsHtml = "";
+      for (let i = 1; i <= meta; i++) {
+        const active = i <= visitas;
+        stampsHtml += `<div class="stamp ${active ? 'active' : ''}">${active ? '✂️' : i}</div>`;
+      }
+
+      cardEl.innerHTML = `
+        ${logoHtml}
+        <div class="shop-name">${neg.nombre}</div>
+        <div class="client-pill">👤 <strong>${cli.nombre}</strong> • ${cli.id}</div>
+
+        <div class="stamps-grid">${stampsHtml}</div>
+
+        <div class="progress-text">${visitas} de ${meta} visitas acumuladas</div>
+        <div style="font-size:0.78rem; color:var(--muted);">Última visita: ${cli.ultimaVisita} • Premios canjeados: ${cli.canjes}</div>
+
+        ${completado
+          ? `<div class="reward-ready">🎉 ¡META CUMPLIDA!<br>${neg.premio}</div>`
+          : `<div class="reward-box">🎁 <strong>Premio al juntar ${meta}:</strong><br>${neg.premio}</div>`
+        }
+      `;
+    }
+
+    function renderAdminControls() {
+      const box = document.getElementById("adminBox");
+      const controls = document.getElementById("adminControls");
+      const selector = document.getElementById("clientSelector");
+
+      if (!isUnlocked) {
+        box.style.display = "none";
+        return;
+      }
+
+      box.style.display = "block";
+
+      // Poblar selector rápido de clientes
+      selector.innerHTML = appData.todosClientes.map(c =>
+        `<option value="${c.id}" ${c.id === currentClientId ? 'selected' : ''}>${c.id} - ${c.nombre} (${c.visitas}/${appData.negocio.meta})</option>`
+      ).join("");
+
+      if (appData.nuevoLlavero) {
+        controls.innerHTML = `
+          <p style="font-size:0.82rem; color:#fbbf24; margin-bottom:8px;">Activar llavero nuevo (${appData.clienteIdBuscado}):</p>
+          <input type="text" id="newClientName" class="input-field" placeholder="Nombre del cliente *">
+          <input type="tel" id="newClientPhone" class="input-field" placeholder="WhatsApp (opcional)">
+          <button type="button" class="btn btn-add" onclick="activateNewKeychain()">✅ Activar y Sumar 1ª Visita</button>
+        `;
+        return;
+      }
+
+      const cli = appData.cliente;
+      const meta = appData.negocio.meta;
+      const llegoMeta = cli.visitas >= meta;
+
+      controls.innerHTML = `
+        <button type="button" class="btn btn-add" ${llegoMeta ? 'disabled' : ''} onclick="sendVisitAction('addVisit')">
+          ${llegoMeta ? '✅ Meta de ' + meta + ' visitas alcanzada' : '➕ Registrar Visita (+1)'}
+        </button>
+        <button type="button" class="btn btn-reset" onclick="confirmReset()">
+          🧹 Canjear Premio y Limpiar Visitas (Volver a 0)
+        </button>
+      `;
+    }
+
+    async function sendVisitAction(actionName) {
+      const msg = document.getElementById("adminMsg");
+      msg.innerText = "⏳ Actualizando tarjeta...";
+      await postAction({ action: actionName, pin: savedPin, clienteId: currentClientId });
+      await new Promise(r => setTimeout(r, 1800));
+      msg.innerText = "✅ ¡Listo!";
+      await loadCard();
+      setTimeout(() => { msg.innerText = ""; }, 2500);
+    }
+
+    function confirmReset() {
+      if (confirm(`¿Confirmas que el cliente ya recibió su premio y deseas LIMPIAR sus visitas a 0/${appData.negocio.meta}?`)) {
+        sendVisitAction("redeemAndReset");
+      }
+    }
+
+    async function activateNewKeychain() {
+      const nombre = document.getElementById("newClientName").value.trim();
+      const tel = document.getElementById("newClientPhone").value.trim();
+      if (!nombre) { alert("Escribe el nombre del cliente."); return; }
+
+      const msg = document.getElementById("adminMsg");
+      msg.innerText = "⏳ Activando llavero...";
+      await postAction({ action: "registerClient", pin: savedPin, clienteId: currentClientId, nombre: nombre, telefono: tel });
+      await new Promise(r => setTimeout(r, 1800));
+      msg.innerText = "✅ ¡Llavero activado!";
+      await loadCard();
+    }
+
+    function switchClient(newId) {
+      currentClientId = newId;
+      loadCard();
+    }
+
+    document.getElementById("btnLock").addEventListener("click", () => {
+      if (isUnlocked) {
+        const box = document.getElementById("adminBox");
+        box.style.display = box.style.display === "none" ? "block" : "none";
+      } else {
+        document.getElementById("pinError").innerText = "";
+        document.getElementById("pinInput").value = "";
+        document.getElementById("pinModal").style.display = "flex";
+        setTimeout(() => document.getElementById("pinInput").focus(), 100);
+      }
+    });
+
+    function closePinModal() {
+      document.getElementById("pinModal").style.display = "none";
+    }
+
+    async function checkPin() {
+      const pinVal = document.getElementById("pinInput").value.trim();
+      const err = document.getElementById("pinError");
+      err.innerText = "Verificando...";
+      const res = await jsonpGet({ action: "verifyPin", pin: pinVal });
+      if (res && res.success) {
+        savedPin = pinVal;
+        sessionStorage.setItem("konekloyalty_pin", pinVal);
+        isUnlocked = true;
+        updateLockUI();
+        closePinModal();
+        renderAdminControls();
+      } else {
+        err.innerText = "❌ PIN incorrecto";
+      }
+    }
+
+    function updateLockUI() {
+      const btn = document.getElementById("btnLock");
+      btn.innerText = isUnlocked ? "🔓" : "🔒";
+      btn.classList.toggle("unlocked", isUnlocked);
+    }
+
+    function logoutAdmin() {
+      isUnlocked = false;
+      savedPin = "";
+      sessionStorage.removeItem("konekloyalty_pin");
+      updateLockUI();
+      renderAdminControls();
+    }
+
+    window.addEventListener("DOMContentLoaded", loadCard);
+  </script>
+</body>
+</html>
