@@ -266,50 +266,52 @@
     let isUnlocked = false;
     let savedPin = sessionStorage.getItem("konekloyalty_pin") || "";
 
-function jsonpGet(queryParams) {
-  return new Promise((resolve, reject) => {
-    const cleanBase = API_URL.trim().replace(/\/u\/\d+\//, "/").replace(/\/+$/, "");
-    if (!cleanBase.startsWith("https://script.google.com/macros/s/")) {
-      reject(new Error("URL de API_URL mal formada en index.html"));
-      return;
+    function jsonpGet(queryParams) {
+      return new Promise((resolve, reject) => {
+        const cleanBase = API_URL.trim().replace(/\/u\/\d+\//, "/").replace(/\/+$/, "");
+        if (!cleanBase.startsWith("https://script.google.com/macros/s/")) {
+          reject(new Error("Falta configurar API_URL en index.html"));
+          return;
+        }
+
+        const cb = "kl_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+        const script = document.createElement("script");
+        // Fórmula exacta probada en KonekShop y KonekParty: solo referrerPolicy, sin crossOrigin
+        script.referrerPolicy = "no-referrer";
+
+        queryParams.callback = cb;
+        queryParams._t = Date.now();
+        const qs = Object.keys(queryParams)
+          .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(queryParams[k]))
+          .join("&");
+
+        const timer = setTimeout(() => {
+          delete window[cb];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          reject(new Error("Tiempo de espera agotado al conectar con Google"));
+        }, 15000);
+
+        window[cb] = (data) => {
+          clearTimeout(timer);
+          delete window[cb];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          resolve(data);
+        };
+
+        script.onerror = () => {
+          clearTimeout(timer);
+          delete window[cb];
+          if (script.parentNode) script.parentNode.removeChild(script);
+          reject(new Error("Error de conexión. Verifica la URL /exec en index.html"));
+        };
+
+        script.src = cleanBase + "?" + qs;
+        document.head.appendChild(script);
+      });
     }
 
-    const cb = "kl_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
-    const script = document.createElement("script");
-    script.referrerPolicy = "no-referrer";
-
-    queryParams.callback = cb;
-    queryParams._t = Date.now();
-    const qs = Object.keys(queryParams)
-      .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(queryParams[k]))
-      .join("&");
-
-    const timer = setTimeout(() => {
-      delete window[cb];
-      if (script.parentNode) script.parentNode.removeChild(script);
-      reject(new Error("Tiempo de espera agotado al conectar con Google"));
-    }, 15000);
-
-    window[cb] = (data) => {
-      clearTimeout(timer);
-      delete window[cb];
-      if (script.parentNode) script.parentNode.removeChild(script);
-      resolve(data);
-    };
-
-    script.onerror = () => {
-      clearTimeout(timer);
-      delete window[cb];
-      if (script.parentNode) script.parentNode.removeChild(script);
-      reject(new Error("Error de red al conectar con Apps Script"));
-    };
-
-    script.src = cleanBase + "?" + qs;
-    document.head.appendChild(script);
-  });
-}    
     function postAction(payload) {
-      const cleanBase = API_URL.trim().replace(/\/u\/\d+\//, "/");
+      const cleanBase = API_URL.trim().replace(/\/u\/\d+\//, "/").replace(/\/+$/, "");
       const body = new URLSearchParams();
       Object.keys(payload).forEach(k => body.append(k, payload[k]));
       return fetch(cleanBase, {
