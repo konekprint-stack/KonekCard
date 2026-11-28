@@ -270,6 +270,7 @@
     const cleanBase = API_URL.trim().replace(/\/u\/\d+\//, "/").replace(/\/+$/, "");
     const cb = "kl_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
     const script = document.createElement("script");
+    script.crossOrigin = "anonymous";
     script.referrerPolicy = "no-referrer";
 
     const act = queryParams.action || "";
